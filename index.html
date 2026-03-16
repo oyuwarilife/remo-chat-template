@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>リモ部屋チャットテンプレ</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --primary: #e8734a; --primary-light: #fff5f2; --bg: #f7f7f5;
+  --card-bg: #fff; --text: #333; --text-sub: #777; --border: #e5e5e5;
+  --success: #4caf50; --warn: #ff9800; --danger: #e53935;
+  --radius: 12px; --shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+body { font-family: -apple-system,BlinkMacSystemFont,'Segoe UI','Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif; background:var(--bg); color:var(--text); line-height:1.6; min-height:100dvh; }
+
+/* Header */
+.header { background:var(--primary); color:#fff; padding:14px 20px; position:sticky; top:0; z-index:100; box-shadow:0 2px 12px rgba(0,0,0,.15); }
+.header-inner { max-width:900px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+.header h1 { font-size:18px; font-weight:700; }
+.header-date { font-size:14px; background:rgba(255,255,255,.2); padding:4px 12px; border-radius:20px; }
+.room-toggle { display:flex; border-radius:8px; overflow:hidden; border:2px solid rgba(255,255,255,.4); }
+.room-toggle button { padding:6px 16px; border:none; background:transparent; color:rgba(255,255,255,.7); font-size:13px; font-weight:600; cursor:pointer; transition:all .2s; }
+.room-toggle button.active { background:rgba(255,255,255,.25); color:#fff; }
+.container { max-width:900px; margin:0 auto; padding:16px; }
+
+/* Time bar */
+.time-bar { background:var(--card-bg); border-radius:var(--radius); padding:14px 20px; margin-bottom:16px; box-shadow:var(--shadow); display:flex; align-items:center; gap:12px; font-size:15px; font-weight:600; }
+.time-bar.slot-active { background:linear-gradient(135deg, var(--primary-light), #fff); border:2px solid var(--primary); }
+.time-bar.slot-next { background:linear-gradient(135deg, #e3f2fd, #fff); border:2px solid #42a5f5; }
+.time-dot { width:12px; height:12px; border-radius:50%; background:var(--success); animation:pulse 2s infinite; flex-shrink:0; }
+.time-bar.slot-active .time-dot { background:var(--primary); width:14px; height:14px; }
+.time-bar.slot-next .time-dot { background:#42a5f5; }
+.time-bar-label { flex:1; }
+.time-bar-next { font-size:20px; font-weight:800; color:var(--primary); letter-spacing:.5px; }
+.time-bar.slot-next .time-bar-next { color:#1565c0; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* Toolbar */
+.toolbar { display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; align-items:center; justify-content:flex-end; }
+.toolbar-right { display:flex; gap:8px; align-items:center; }
+.btn { padding:8px 16px; border:2px solid var(--border); border-radius:8px; background:var(--card-bg); font-size:13px; font-weight:600; cursor:pointer; color:var(--text); transition:all .2s; display:inline-flex; align-items:center; gap:6px; }
+.btn:hover { border-color:var(--primary); color:var(--primary); }
+.btn-primary { background:var(--primary); border-color:var(--primary); color:#fff; }
+.btn-primary:hover { filter:brightness(1.1); color:#fff; }
+.btn-danger { border-color:var(--danger); color:var(--danger); }
+.btn-danger:hover { background:var(--danger); color:#fff; }
+.btn-sm { padding:4px 10px; font-size:12px; }
+
+/* Notion links */
+.notion-bar { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+.notion-link { display:inline-flex; align-items:center; gap:6px; padding:10px 16px; background:var(--card-bg); border:2px solid var(--border); border-radius:var(--radius); font-size:13px; font-weight:600; color:var(--text); text-decoration:none; transition:all .2s; box-shadow:var(--shadow); }
+.notion-link:hover { border-color:var(--primary); color:var(--primary); transform:translateY(-1px); }
+
+/* Cat nav */
+.cat-nav { display:flex; gap:6px; flex-wrap:wrap; padding-bottom:8px; margin-bottom:16px; }
+.cat-btn { white-space:nowrap; padding:8px 16px; border:2px solid var(--border); border-radius:24px; background:var(--card-bg); font-size:13px; font-weight:600; cursor:pointer; transition:all .2s; color:var(--text); }
+.cat-btn:hover { border-color:var(--primary); color:var(--primary); }
+.cat-btn.active { background:var(--primary); border-color:var(--primary); color:#fff; }
+.cat-btn.time-highlight { border-color:var(--primary); color:var(--primary); background:var(--primary-light); animation:time-glow 2s ease-in-out infinite; position:relative; }
+.cat-btn.time-highlight::before { content:''; position:absolute; left:8px; top:50%; transform:translateY(-50%); width:8px; height:8px; border-radius:50%; background:var(--primary); animation:pulse 2s infinite; }
+.cat-btn.time-highlight { padding-left:22px; }
+@keyframes time-glow { 0%,100%{box-shadow:0 0 0 rgba(232,115,74,0)} 50%{box-shadow:0 0 12px rgba(232,115,74,.3)} }
+
+/* Section */
+.section { margin-bottom:24px; }
+.section-title { font-size:16px; font-weight:700; padding:8px 0; margin-bottom:8px; border-bottom:2px solid var(--primary); display:flex; align-items:center; gap:8px; }
+.section-badge { font-size:11px; padding:2px 8px; border-radius:10px; font-weight:700; }
+.badge-required { background:#fce4ec; color:var(--danger); }
+.badge-optional { background:#e8f5e9; color:var(--success); }
+.badge-custom { background:#e8eaf6; color:#3f51b5; }
+
+/* Section Notion links */
+.section-notion { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+.section-notion a { display:inline-flex; align-items:center; gap:6px; padding:8px 14px; background:#f0f7ff; border:1px solid #bbdefb; border-radius:8px; font-size:12px; font-weight:600; color:#1565c0; text-decoration:none; transition:all .2s; }
+.section-notion a:hover { background:#bbdefb; transform:translateY(-1px); }
+
+/* Tips */
+.tips-box { background:linear-gradient(135deg, #fff8e1, #fff); border:2px solid #ffe082; border-radius:var(--radius); padding:16px; margin-bottom:16px; box-shadow:var(--shadow); }
+.tips-toggle { display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; font-weight:700; font-size:14px; color:#f57f17; }
+.tips-toggle .arrow { transition:transform .2s; font-size:12px; }
+.tips-box.open .tips-toggle .arrow { transform:rotate(180deg); }
+.tips-content { display:none; margin-top:12px; font-size:13px; line-height:1.8; color:var(--text); }
+.tips-box.open .tips-content { display:block; }
+.tips-content h4 { font-size:13px; font-weight:700; color:#e65100; margin-top:10px; margin-bottom:4px; }
+.tips-content ul { margin:0 0 8px 20px; }
+.tips-content li { margin-bottom:2px; }
+
+/* Card */
+.tpl-card { background:var(--card-bg); border-radius:var(--radius); margin-bottom:10px; box-shadow:var(--shadow); overflow:hidden; border:1px solid var(--border); transition:border-color .2s; }
+.tpl-card:hover { border-color:var(--primary); }
+.tpl-card.time-active { border-left:4px solid var(--primary); }
+.tpl-header { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; cursor:pointer; user-select:none; gap:8px; }
+.tpl-title { font-size:14px; font-weight:600; flex:1; }
+.tpl-timing { font-size:11px; color:var(--text-sub); background:#f5f5f5; padding:2px 8px; border-radius:10px; white-space:nowrap; }
+.tpl-arrow { font-size:12px; color:var(--text-sub); transition:transform .2s; }
+.tpl-card.open .tpl-arrow { transform:rotate(180deg); }
+.tpl-body { display:none; padding:0 16px 12px; }
+.tpl-card.open .tpl-body { display:block; }
+.tpl-note { font-size:12px; color:var(--text-sub); margin-bottom:8px; padding:6px 10px; background:#fffde7; border-radius:6px; border-left:3px solid var(--warn); }
+.tpl-text { background:#fafaf8; border:1px solid var(--border); border-radius:8px; padding:14px; font-size:13px; line-height:1.8; white-space:pre-wrap; word-break:break-all; }
+.tpl-actions { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+.btn-copy { padding:8px 20px; border:none; border-radius:8px; background:var(--primary); color:#fff; font-size:13px; font-weight:600; cursor:pointer; transition:all .2s; display:flex; align-items:center; gap:6px; }
+.btn-copy:hover { filter:brightness(1.1); transform:translateY(-1px); }
+.btn-copy:active { transform:translateY(0); }
+.btn-copy.copied { background:var(--success); }
+
+/* Checklist */
+.checklist { margin:10px 0; padding:10px 14px; background:#f0f7ff; border-radius:8px; border:1px solid #bbdefb; }
+.checklist h4 { font-size:13px; margin-bottom:6px; color:#1565c0; }
+.checklist label { display:flex; align-items:flex-start; gap:8px; font-size:13px; padding:3px 0; cursor:pointer; }
+.checklist input[type="checkbox"] { margin-top:3px; accent-color:var(--primary); }
+
+/* Toast */
+.toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(100px); background:#333; color:#fff; padding:12px 24px; border-radius:10px; font-size:14px; font-weight:600; z-index:300; transition:transform .3s ease; max-width:90vw; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,.3); }
+.toast.show { transform:translateX(-50%) translateY(0); }
+.toast.warn { background:var(--danger); }
+.toast.success { background:var(--success); }
+
+/* Modal */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:200; justify-content:center; align-items:flex-start; padding:40px 16px; overflow-y:auto; }
+.modal-overlay.show { display:flex; }
+.modal { background:var(--card-bg); border-radius:var(--radius); width:100%; max-width:600px; padding:24px; box-shadow:0 8px 40px rgba(0,0,0,.2); }
+.modal h2 { font-size:18px; margin-bottom:16px; }
+.modal label { display:block; font-size:13px; font-weight:600; margin-bottom:4px; margin-top:12px; }
+.modal input[type="text"], .modal select, .modal textarea {
+  width:100%; padding:10px 12px; border:2px solid var(--border); border-radius:8px;
+  font-size:14px; font-family:inherit; transition:border-color .2s;
+}
+.modal input:focus, .modal select:focus, .modal textarea:focus { outline:none; border-color:var(--primary); }
+.modal textarea { min-height:200px; resize:vertical; line-height:1.6; }
+.modal-actions { display:flex; gap:8px; margin-top:20px; justify-content:flex-end; }
+
+/* Edit mode indicators */
+.edit-btns { display:none; gap:6px; margin-left:8px; }
+body.edit-mode .edit-btns { display:flex; }
+body.edit-mode .tpl-card { border-style:dashed; }
+
+@media (max-width:600px) {
+  .header { padding:10px 14px; } .header h1 { font-size:15px; }
+  .container { padding:10px; } .tpl-text { font-size:12px; padding:10px; }
+  .toolbar { flex-direction:column; align-items:stretch; }
+  .toolbar-right { margin-left:0; justify-content:flex-end; }
+}
+</style>
+</head>
+<body class="room-basic">
+
+<div class="header">
+  <div class="header-inner">
+    <h1>リモ部屋チャットテンプレ</h1>
+    <div class="header-date" id="todayDate"></div>
+    <div class="room-toggle">
+      <button class="active" data-room="basic">ベーシック</button>
+      <button data-room="advanced">アドバンス</button>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="time-bar" id="timeBar">
+    <div class="time-dot"></div>
+    <span class="time-bar-label" id="timeBarText"></span>
+  </div>
+
+  <div class="notion-bar">
+    <a class="notion-link" href="https://www.notion.so/remolabo/ddcf421272344be4b4ca8f3db3cf3a5b?v=9389f2b3be8342d7b588f113e9cf5438" target="_blank" rel="noopener">
+      &#128197; 本日の企画一覧（Notion）
+    </a>
+    <a class="notion-link" href="https://www.notion.so/remolabo/2d1bee38fcfe800ea915ee3f630f04c1?source=copy_link#2e0bee38fcfe80ce80f0c22d3119c14e" target="_blank" rel="noopener">
+      &#128203; 本日の企画チェック（Notion）
+    </a>
+    <a class="notion-link" href="https://www.notion.so/remolabo/d8449a37cd014208a02f675326c2713b" target="_blank" rel="noopener">
+      &#128227; 企画内お知らせ（Notion）
+    </a>
+  </div>
+
+  <div class="tips-box" id="tipsBox" onclick="this.classList.toggle('open')">
+    <div class="tips-toggle">&#128161; メッセージ送信のコツ <span class="arrow">&#9660;</span></div>
+    <div class="tips-content" onclick="event.stopPropagation()">
+      <h4>&#9997; アレンジのポイント</h4>
+      <ul>
+        <li>テンプレをそのまま送らず、<b>ひと言自分の言葉を添える</b>と温かみが出ます</li>
+        <li>「今日は寒いですね」など<b>季節・天気の話題</b>を冒頭に入れると親しみやすさUP</li>
+        <li>メンバーの名前が見えたら<b>「〇〇さんお疲れさまです！」</b>と個別に声かけ</li>
+        <li><b>絵文字は多すぎず、1文に1-2個</b>がちょうどいい</li>
+      </ul>
+      <h4>&#9888; 送信前の注意</h4>
+      <ul>
+        <li><b>@channel</b> のメンションは自動で入りません。<b>手動で入力</b>してください</li>
+        <li>URLの直前に絵文字があると<b>リンクが無効</b>になります（コピー時に警告が出ます）</li>
+        <li>企画名・講師名・時間は<b>必ずNotionで最新情報を確認</b>してから送信</li>
+        <li>ベーシック / アドバンスの<b>部屋を間違えていないか</b>確認</li>
+      </ul>
+      <h4>&#128338; タイミングのコツ</h4>
+      <ul>
+        <li>企画のお知らせは<b>各活動の開始前</b>に送っておくと見てもらいやすい</li>
+        <li>お知らせが多い日は<b>2-3個に絞って</b>、残りは次の活動時間に回す</li>
+        <li>夜活の終了メッセージは<b>21:00ぴったり</b>がベスト</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="toolbar-right">
+      <button class="btn" id="btnAdd" onclick="openAddModal()">&#10010; テンプレ追加</button>
+      <button class="btn" id="btnEdit" onclick="toggleEditMode()">&#9998; 編集モード</button>
+      <button class="btn btn-sm" id="btnReset" onclick="resetAll()" style="display:none">初期状態に戻す</button>
+    </div>
+  </div>
+  <div class="cat-nav" id="catNav"></div>
+
+  <div id="content"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h2 id="modalTitle">テンプレートを追加</h2>
+    <label>タイトル</label>
+    <input type="text" id="fTitle" placeholder="例: 朝活開始（7:55頃）">
+    <label>カテゴリ</label>
+    <select id="fCat"></select>
+    <label>送信タイミング</label>
+    <input type="text" id="fTiming" placeholder="例: 7:55頃">
+    <label>必須 / 任意</label>
+    <select id="fBadge">
+      <option value="required">必須</option>
+      <option value="optional">任意</option>
+    </select>
+    <label>部屋タイプ</label>
+    <select id="fRoom">
+      <option value="">共通（両方に表示）</option>
+      <option value="basic">ベーシックのみ</option>
+      <option value="advanced">アドバンスのみ</option>
+    </select>
+    <label>注意メモ（任意）</label>
+    <input type="text" id="fNote" placeholder="例: @channelのメンションは手動でつけてください">
+    <label>テンプレート本文</label>
+    <textarea id="fText" placeholder="チャットに送る文面を入力&#10;&#10;{{DATE}} と書くと今日の日付に自動変換されます"></textarea>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-primary" id="btnSave" onclick="saveTemplate()">保存</button>
+    </div>
+    <input type="hidden" id="fEditId" value="">
+  </div>
+</div>
+
+<script>
+// ===== Utility =====
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const DAY_NAMES = ['日','月','火','水','木','金','土'];
+const LS_KEY = 'remo-chat-tpl-v1';
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getMonth()+1}/${d.getDate()}(${DAY_NAMES[d.getDay()]})`;
+}
+function replaceDatePlaceholder(text) { return text.replace(/\{\{DATE\}\}/g, todayStr()); }
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function uid() { return 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+function showToast(msg, type='success', duration=2500) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type + ' show';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function checkUrlEmoji(text) {
+  return /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}\u{20E3}\u{E0020}-\u{E007F}]https?:\/\//gu.test(text);
+}
+
+async function copyText(id, btn) {
+  const tpl = templates.find(t => t.id === id);
+  if (!tpl) return;
+  const processed = replaceDatePlaceholder(tpl.text);
+  if (checkUrlEmoji(processed)) {
+    showToast('URL の冒頭に絵文字があります！リンクが無効になる可能性があります', 'warn', 4000);
+  }
+  try {
+    await navigator.clipboard.writeText(processed);
+    btn.classList.add('copied');
+    btn.innerHTML = '&#10003; コピー済み';
+    showToast('コピーしました');
+    setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = '&#128203; コピー'; }, 2000);
+  } catch { showToast('コピーに失敗しました', 'warn'); }
+}
+
+async function copyVariant(id, vi, btn) {
+  const tpl = templates.find(t => t.id === id);
+  if (!tpl || !tpl.variants) return;
+  const processed = replaceDatePlaceholder(tpl.variants[vi].text);
+  if (checkUrlEmoji(processed)) {
+    showToast('URL の冒頭に絵文字があります！リンクが無効になる可能性があります', 'warn', 4000);
+  }
+  try {
+    await navigator.clipboard.writeText(processed);
+    btn.classList.add('copied');
+    btn.innerHTML = '&#10003; コピー済み';
+    showToast('コピーしました');
+    setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = '&#128203; コピー'; }, 2000);
+  } catch { showToast('コピーに失敗しました', 'warn'); }
+}
+
+// ===== Time =====
+function getCurrentTimeSlot() {
+  const t = new Date().getHours() * 60 + new Date().getMinutes();
+  if (t >= 450 && t < 560) return { slot:'morning', label:'朝活タイム中', time:'8:00-9:00', active:true, nextCat:'morning' };
+  if (t >= 740 && t < 820) return { slot:'lunch', label:'昼活タイム中', time:'12:30-13:30', active:true, nextCat:'lunch' };
+  if (t >= 1190 && t < 1270) return { slot:'night', label:'夜活タイム中', time:'20:00-21:00', active:true, nextCat:'night' };
+  if (t < 450) return { slot:'off', label:'次の活動', time:'8:00 朝活', active:false, nextCat:'morning' };
+  if (t < 740) return { slot:'between', label:'次の活動', time:'12:30 昼活', active:false, nextCat:'lunch' };
+  if (t < 1190) return { slot:'between', label:'次の活動', time:'20:00 夜活', active:false, nextCat:'night' };
+  return { slot:'off', label:'本日の活動は終了', time:'', active:false, nextCat:null };
+}
+
+function updateTimeBar() {
+  const ts = getCurrentTimeSlot();
+  const bar = $('#timeBar');
+  bar.className = 'time-bar' + (ts.active ? ' slot-active' : ts.time ? ' slot-next' : '');
+  if (ts.active) {
+    bar.querySelector('.time-bar-label').innerHTML = `${ts.label} <span class="time-bar-next">${ts.time}</span>`;
+  } else if (ts.time) {
+    bar.querySelector('.time-bar-label').innerHTML = `${ts.label} <span class="time-bar-next">${ts.time}</span>`;
+  } else {
+    bar.querySelector('.time-bar-label').textContent = ts.label;
+  }
+}
+
+// ===== Default Template Data =====
+const DEFAULT_TEMPLATES = [
+  { id:'d01', cat:'basic-info', catLabel:'基本の案内', title:'入室時あいさつ（必須）', badge:'required', timing:'入室時＆定期的に', note:'@channelのメンションは手動でつけてください',
+    text:`@channel\nお疲れさまです！\n\n今日のリモ部屋スタッフの〇〇です✨\n\nインフォメーション付近にいますので、\nご不明な点がありましたら\n私宛にメンションをつけて\nメッセージをください📣` },
+  { id:'d02', cat:'basic-info', title:'アウトプットの促し（任意）', badge:'optional', timing:'タイミングを見て',
+    text:`リモシティにアウトプット📣\n\n・今日の積み上げ\n・今日取り組んだこと・試したこと\n・行ってみたリモ部屋のエリア\n・参加した企画のアウトプットなど\n\n小さな積み重ねが土台になっていくので\n積極的にアウトプットしてみましょう✨\n\nみんなのポスト＞積み上げ\nhttps://remolabo.commmune.com/view/box?boxId=talk002&categoryIndex=258` },
+  { id:'d03', cat:'basic-info', title:'出勤の宣言をしよう（任意）', badge:'optional', timing:'タイミングを見て',
+    text:`／\nリモ部屋に出勤したら宣言しよう✨\n＼\n\nリモートワークは『自己管理』が重要です💡\n宣言して定着させるためにも、リモ部屋をご活用ください😌\n\n宣言の例\n💬今から〇時まで作業します！\n💬今日はこれで終わりにします！明日〇時に出勤します！\n\n🔻勤怠機能の使い方（リモ部屋マニュアル）\nhttps://remolabo-02.notion.site/remo-room2?p=2c1668d54fd38025ae09ffa9c5e83dd6&pm=s` },
+  { id:'d04', cat:'basic-info', title:'交流に関する注意事項（任意）', badge:'optional', timing:'必要に応じて',
+    text:`⚠注意事項⚠\n\nリモ部屋は、あくまで学びや交流、\nアウトプットの場です。\n\n以下のような行為は、トラブルの原因にもなりますのでご遠慮ください。\n\n❌ 禁止されている行為\n・他の教育サービスや団体への勧誘\n・宗教、MLM（マルチ商法）などの勧誘\n・ナンパ行為や、目的を偽ってのアポ取り（ブラインド営業）\n・外部サービスやお仕事の紹介\n・チャットや投稿等を使っての、非公式の自主的な企画の呼びかけや誘導\n\n上記の内容は、リモ部屋のプロフィールなどに記入するのもご遠慮いただきますようお願いいたします。\n\n🔻インフォメーション\nhttps://remolabo.commmune.com/view/knowledgebase/post/30639` },
+
+  { id:'d05', cat:'weekend', catLabel:'土日用', title:'土日用（ベーシック）', badge:'required', timing:'土日', roomType:'basic',
+    text:`⏰土日もポモドーロ法で作業をできます⏰\n\n「週末や早朝・深夜にも作業会をしたい」\nという声にお応えして、\n各自動画を再生して始めるスタイルになりました✨\n\nご自身のタイミングで参加できるので\nぜひ動画を活用してくださいね🎥\n\n▶ 参加方法\n右側にある「リモにゃんの動画」を再生してスタートしてください🐱\n\n--------\n\n🌞 ポモドーロの流れ 🌙\n【やること宣言】\n→ 25分集中\n→ 5分休憩\n→ 25分集中\n→ リモシティでアウトプット\n\n※やり方の説明が不要な方は、\n動画を【1:20】まで進めると\nすぐにポモドーロタイマーが始まります✨\n\n--------\n📝リモシティのアウトプット場所\n\nみんなのポスト＞積み上げ\nhttps://remolabo.commmune.com/view/box?boxId=talk002&categoryIndex=258` },
+  { id:'d06', cat:'weekend', title:'土日用（アドバンス）', badge:'required', timing:'土日', roomType:'advanced',
+    text:`⏰土日もポモドーロ法で作業をできます⏰\n\n「週末や早朝・深夜にも作業会をしたい」\nという声にお応えして、\n各自動画を再生して始めるスタイルになりました✨\n\nご自身のタイミングで参加できるので\nぜひ動画を活用してくださいね🎥\n\n▶ 参加方法\n左側にある「リモにゃんの動画」を再生してスタートしてください🐱\n\n--------\n\n🌞 ポモドーロの流れ 🌙\n【やること宣言】\n→ 25分集中\n→ 5分休憩\n→ 25分集中\n→ リモシティでアウトプット\n\n※やり方の説明が不要な方は、\n動画を【1:20】まで進めると\nすぐにポモドーロタイマーが始まります✨\n\n--------\n📝リモシティのアウトプット場所\n\nみんなのポスト＞積み上げ\nhttps://remolabo.commmune.com/view/box?boxId=talk002&categoryIndex=258` },
+
+  { id:'d07', cat:'welcome', catLabel:'初めまして', title:'初めまして（ベーシック初参加）', badge:'optional', timing:'昇格後・初入室時', note:'本オープンしてから全力歓迎！自分らしい言葉に変えてOK',
+    variants: [
+      { label:'パターン1', text:`昇格おめでとうございます🎉\nリモ部屋へようこそ✨\n\nまずはアバターを変えてみたり、リモ部屋内を探検してみてくださいね♪` },
+      { label:'パターン2', text:`ようこそリモ部屋へ🎊✨\n\n操作方法については、マニュアルをご覧ください😆\n📗新リモ部屋マニュアル\nhttps://remolabo-02.notion.site/remo-room2?p=2c1668d54fd38032bc50d2ca5004599a&pm=s` },
+      { label:'パターン3', text:`お疲れさまです！\nリモ部屋へようこそ👏\n\nキーボードの矢印キーで歩けるので、部屋の中を探検してみてください✨` },
+    ] },
+  { id:'d08', cat:'welcome', title:'初めまして（アドバンス初参加）', badge:'optional', timing:'昇格後・初入室時',
+    text:`アドバンスのリモ部屋へようこそ✨\n昇格おめでとうございます🎉\n\nベーシックの部屋とは雰囲気や置いているコンテンツが違うので、探検してみてくださいね🚙` },
+
+  { id:'d09', cat:'activity-start', catLabel:'朝昼夜活 共通', title:'朝昼夜活スタート案内（アドバンス）', badge:'required', timing:'各活動の開始時', roomType:'advanced', note:'@channelのメンションは手動でつけてください',
+    text:`@channel\n\n📍朝・昼・夜活について\n朝昼夜活は、各自動画を再生して始めるスタイルです✨\n\nご自身のタイミングで参加できますが、\n平日は「みんなで取り組む時間」も設けています😌\n\n--------\n\n⏰ 朝・昼・夜活の開催時間\n🌞 8:00〜9:00　朝活\n✨ 12:30〜13:30　昼活\n🌙 20:00〜21:00　夜活\n\nぜひこの時間に集まって、\n集中して作業しましょう！\n\n--------\n\n▶ 参加方法\n左側にある「リモにゃんの動画」を再生してスタートしてください🐱\n\n--------\n\n🌞 朝・昼・夜活の流れ 🌙\n【やること宣言】\n→ 25分集中\n→ 5分休憩\n→ 25分集中\n→ リモシティでアウトプット\n\n※やり方の説明が不要な方は、\n動画を【1:20】まで進めると\nすぐにポモドーロタイマーが始まります✨\n\n--------\n\n📝 参加フォームについて\nタスクやポモドーロが完了したら、\n参加フォームの提出をお願いします。\n\n※ 動画の下にもフォームがあります。\nご自身のタイミングで送信してください。\n\n🔻 朝・昼・夜活（ポモドーロタイマー作業）報告フォーム\nhttps://docs.google.com/forms/d/e/1FAIpQLSf3ZLp2DfhyMbrgeQaM07UWKE5va-Pn33LQIwvhm9sUjG0S7A/viewform` },
+  { id:'d10', cat:'activity-start', title:'朝昼夜活スタート案内（ベーシック）', badge:'required', timing:'各活動の開始時', roomType:'basic', note:'@channelのメンションは手動でつけてください',
+    text:`@channel\n\n📍朝・昼・夜活について\n朝昼夜活は、各自動画を再生して始めるスタイルです✨\n\nご自身のタイミングで参加できますが、\n平日は「みんなで取り組む時間」も設けています😌\n\n--------\n\n⏰ 朝・昼・夜活の開催時間\n🌞 8:00〜9:00　朝活\n✨ 12:30〜13:30　昼活\n🌙 20:00〜21:00　夜活\n\nぜひこの時間に集まって、\n集中して作業しましょう！\n\n--------\n\n▶ 参加方法\n画面の右にある「リモにゃんの動画」を再生してスタートしてください🐱\n\n--------\n\n🌞 朝・昼・夜活の流れ 🌙\n【やること宣言】\n→ 25分集中\n→ 5分休憩\n→ 25分集中\n→ リモシティでアウトプット\n\n※やり方の説明が不要な方は、\n動画を【1:20】まで進めると\nすぐにポモドーロタイマーが始まります✨\n\n--------\n\n📝 参加フォームについて\nタスクやポモドーロが完了したら、\n参加フォームの提出をお願いします。\n\n※ 動画の下にもフォームがあります。\nご自身のタイミングで送信してください。\n\n🔻 朝・昼・夜活（ポモドーロタイマー作業）報告フォーム\nhttps://docs.google.com/forms/d/e/1FAIpQLSf3ZLp2DfhyMbrgeQaM07UWKE5va-Pn33LQIwvhm9sUjG0S7A/viewform` },
+
+  { id:'d11', cat:'morning', catLabel:'朝活 8:00', title:'朝活開始（7:55頃）', badge:'required', timing:'7:55頃', timeSlot:'morning', note:'@channelのメンションは手動でつけてください',
+    text:`@channel\n\nこれから朝活を始めます🌞\n\nメインフロア1にある作業スペースに集まってみんなで作業をしましょう✨` },
+  { id:'d12', cat:'morning', title:'朝活 開催中（8:10-8:20頃）', badge:'required', timing:'8:10-8:20頃', timeSlot:'morning', note:'@channelのメンションは手動でつけてください',
+    text:`@channel\n8:00~9:00\nみんなで朝活🌞開催中！\n\n25分間のポモドーロタイマー🕰\n【やること宣言→25分集中→5分休憩→25分集中→リモシティでアウトプット】\n\nみんなで集まってモクモク作業タイム中です！\n\nやることをチャットへ宣言してから取り組んでください🔥\n\n🌱いつからでもご参加いただけます！\n🌱マイクOFFの確認お願いします！\n\n新しいリモ部屋での朝活は、各自動画を再生して始めるスタイルです✨\nリモにゃんの動画を再生してみてください🙌` },
+  { id:'d13', cat:'morning', title:'朝昼夜活のお知らせ（8:40頃）', badge:'required', timing:'8:40頃', timeSlot:'morning', note:'@channelのメンションは手動でつけてください',
+    text:`@channel\n朝活🌞＆昼活🍙＆夜活🌙\nのお知らせ\n\n平日毎日開催中📣！！\n場所：リモ部屋 作業スペース\n\n🌞8:00~9:00 朝活\n✨12:30~13:30 昼活\n🌙20:00~21:00 夜活\n\n25分間×２セットのポモドーロタイマー🕰\nみんなで集まってモクモク作業タイム！\n継続することで習慣を身につけることができます🔥\n\n※各々お好きなタイミングで作業できるので、いつでもご参加ください🪄` },
+  { id:'d14', cat:'morning', title:'朝活終了', badge:'required', timing:'9:00頃', timeSlot:'morning', note:'@channelのメンションは手動でつけてください',
+    text:`@channel\n\n皆さま朝活お疲れ様でした🌞\n参加フォームもぜひご提出ください！\n\n📝朝昼夜活の参加フォーム\n途中参加・途中退出の場合でもできた記録を残すためにフォーム送信をお願いします✨\n※動画の下にも同じフォームがあるので、いつでも送信できます😆\nhttps://docs.google.com/forms/d/e/1FAIpQLSf3ZLp2DfhyMbrgeQaM07UWKE5va-Pn33LQIwvhm9sUjG0S7A/viewform\n\n📣作業が終わったらアウトプット\n作業を終えたら、リモシティでアウトプットしてみましょう！\n積み上げ報告を盛り上げて、そこから交流することもできますよ😊\n\nみんなのポスト＞積み上げ\nhttps://remolabo.commmune.com/view/box?boxId=talk002&categoryIndex=258\n\n今日も一日頑張っていきましょう✨` },
+
+  { id:'d15', cat:'lunch', catLabel:'昼活 12:30', title:'昼活開始（12:25頃）', badge:'required', timing:'12:25頃', timeSlot:'lunch', note:'@channelのメンションは手動でつけてください',
+    text:`@channel\nこれから昼活を始めます🍚\n\nメインフロア1にある作業スペースに集まってみんなで作業をしましょう✨` },
+  { id:'d16', cat:'lunch', title:'昼活 開催中（13:00頃）', badge:'required', timing:'13:00頃', timeSlot:'lunch', note:'@channelのメンションは手動でつけてください',
+    text:`@channel\n12:30~13:30\nみんなで昼活🍙開催中！\n\nポモドーロタイマー🕰\n【やること宣言→25分集中→5分休憩→25分集中→リモシティでアウトプット】\n\nみんなで集まってモクモク作業タイム中です！\n\nやることをチャットへ宣言してから取り組んでください🔥\n\n🌱いつからでもご参加いただけます！\n🌱マイクOFFの確認お願いします` },
+  { id:'d17', cat:'lunch', title:'朝昼夜活のお知らせ（13:20頃）', badge:'required', timing:'13:20頃', timeSlot:'lunch',
+    text:`朝活🌞＆昼活🍙＆夜活🌙のお知らせ\n\n平日毎日開催中📣！！\n場所：リモ部屋 作業スペース\n\n🌞8:00~9:00 朝活\n✨12:30~13:30 昼活\n🌙20:00~21:00 夜活\n\n25分間×セットのポモドーロタイマー🕰\nみんなで集まってモクモク作業タイム！\n継続することで習慣を身につけることができます🔥\n\n※各々お好きなタイミングで作業できるので、いつでもご参加ください🪄` },
+  { id:'d18', cat:'lunch', title:'昼活終了', badge:'required', timing:'13:30頃', timeSlot:'lunch', note:'@channelのメンションは手動でつけてください',
+    text:`@channel\n\n皆さま昼活お疲れ様でした🍙\n参加フォームもぜひご提出ください！\n\n📝朝昼夜活の参加フォーム\n途中参加・途中退出の場合でもできた記録を残すためにフォーム送信をお願いします✨\n※動画の下にも同じフォームがあるので、いつでも送信できます😆\nhttps://docs.google.com/forms/d/e/1FAIpQLSf3ZLp2DfhyMbrgeQaM07UWKE5va-Pn33LQIwvhm9sUjG0S7A/viewform\n\n📣作業が終わったらアウトプット\n作業を終えたら、リモシティでアウトプットしてみましょう！\n積み上げ報告を盛り上げて、そこから交流することもできますよ😊\n\nみんなのポスト＞積み上げ\nhttps://remolabo.commmune.com/view/box?boxId=talk002&categoryIndex=258\n\n午後も引き続き頑張っていきましょう✨` },
+
+  { id:'d19', cat:'night', catLabel:'夜活 20:00', title:'夜活開始（19:55頃）', badge:'required', timing:'19:55頃', timeSlot:'night', note:'@channelのメンションは手動でつけてください',
+    text:`@channel\n\nこれから夜活を始めます🌙\n\nメインフロア1にある作業スペースに集まってみんなで作業をしましょう✨` },
+  { id:'d20', cat:'night', title:'夜活 開催中（20:30頃）', badge:'required', timing:'20:30頃', timeSlot:'night', note:'@channelのメンションは手動でつけてください',
+    text:`@channel\n20:00~21:00\nみんなで夜活🌙開催中！\n\n25分間のポモドーロタイマー🕰\n\nみんなで集まってモクモク作業タイム中です！\n\nやることをチャットへ宣言してから取り組んでください🔥\n\n🌱いつからでもご参加いただけます！\n🌱マイクOFFの確認お願いします！` },
+  { id:'d21', cat:'night', title:'朝昼夜活のお知らせ（21:00頃）メンションなし', badge:'required', timing:'21:00頃', timeSlot:'night', note:'これはチャンネルメンションなし',
+    text:`朝活🌞＆昼活🍙＆夜活🌙のお知らせ\n\n平日毎日開催中📣！！\n場所：リモ部屋 作業スペース\n\n🌞8:00~9:00 朝活\n✨12:30~13:30 昼活\n🌙20:00~21:00 夜活\n\n25分間×２セットのポモドーロタイマー🕰\nみんなで集まってモクモク作業タイム！\n継続することで習慣を身につけることができます🔥` },
+  { id:'d22', cat:'night', title:'夜活終了（21:00頃）メンションあり', badge:'required', timing:'21:00頃', timeSlot:'night', note:'@channelのメンションは手動でつけてください',
+    text:`@channel\n\n皆さま夜活お疲れ様でした🌙\n参加フォームもぜひご提出ください！\n\n📝朝昼夜活の参加フォーム\n途中参加・途中退出の場合でもできた記録を残すためにフォーム送信をお願いします✨\n※動画の下にも同じフォームがあるので、いつでも送信できます😆\nhttps://docs.google.com/forms/d/e/1FAIpQLSf3ZLp2DfhyMbrgeQaM07UWKE5va-Pn33LQIwvhm9sUjG0S7A/viewform\n\n📣作業が終わったらアウトプット\n作業を終えたら、リモシティでアウトプットしてみましょう！\n積み上げ報告を盛り上げて、そこから交流することもできますよ😊\n\nみんなのポスト＞積み上げ\nhttps://remolabo.commmune.com/view/box?boxId=talk002&categoryIndex=258\n\n今日もお疲れさまでした🍵` },
+
+  { id:'d23', cat:'event', catLabel:'企画案内', title:'本日の企画（ベーシック向け）', badge:'required', timing:'朝昼夜活の開始前', roomType:'basic',
+    note:'Notionから企画情報を取得し、下のテンプレに追記して使う',
+    checklist:['プロダクト部TOP＞本日の企画から全員対象の企画を選んでいますか？','Proコース・実践プログラム・クルー限定・昇格オリエン・ゲリラライブの企画を除外していますか？','講師名は講師の表記に変更していますか？','ベーシック向けの企画を選んでいますか？','企画の時間帯は合っていますか？'],
+    text:`@channel\n【{{DATE}}企画のお知らせ】\n\n🗓8:00~9:00\n　朝活🌞🔥\n\n🗓12:30~13:30\n　昼活🍙🔥\n\n🗓20:00~21:00\n　夜活🌜🔥\n\n▼Zoom開催の企画\nZoomリンクはリモシティのカレンダーをチェック👀` },
+  { id:'d24', cat:'event', title:'本日の企画（アドバンス・マスター向け）', badge:'required', timing:'朝昼夜活の開始前', roomType:'advanced',
+    note:'Notionから企画情報を取得し、下のテンプレに追記して使う',
+    checklist:['プロダクト部TOP＞本日の企画から全員対象の企画を選んでいますか？','Proコース・実践プログラム・クルー限定・昇格オリエン・ゲリラライブの企画を除外していますか？','講師名は講師の表記に変更していますか？','アドバンス・マスター向けの企画を選んでいますか？','企画の時間帯は合っていますか？'],
+    text:`@channel\n【{{DATE}}企画のお知らせ】\n\n🗓8:00~9:00\n　朝活🌞🔥\n\n🗓12:30~13:30\n　昼活🍙🔥\n\n🗓20:00~21:00\n　夜活🌜🔥\n\n▼Zoom開催の企画\nZoomリンクはリモシティのカレンダーをチェック👀` },
+
+  { id:'d25', cat:'event-parts', catLabel:'企画パーツ', title:'ベーシック壁打ち会', badge:'optional', timing:'コピペ用',
+    text:`🗓9:30~11:30\n【ベーシッククラス】\nベーシック壁打ち会🐱\n（Zoom開催）` },
+  { id:'d26', cat:'event-parts', title:'アドバンス壁打ち会', badge:'optional', timing:'コピペ用',
+    text:`🗓9:30~11:00\n【アドバンスクラス】\nアドバンス壁打ち会🦊\n（Zoom開催）` },
+  { id:'d27', cat:'event-parts', title:'クライアントワーク報告会', badge:'optional', timing:'コピペ用',
+    text:`🗓00:00~00:00\n【ベーシック・アドバンス】\nクライアントワーク報告会\n(Zoom開催)` },
+  { id:'d28', cat:'event-parts', title:'全体セミナー', badge:'optional', timing:'コピペ用',
+    text:`🗓00:00~00:00\n【全員対象】　全体セミナー\n【】\n講師：さん\n(Zoom企画)` },
+  { id:'d29', cat:'event-parts', title:'リモラジオ', badge:'optional', timing:'コピペ用',
+    text:`🗓00:00~00:00\n【全員対象】リモラジオ📻\nリモライブで開催\n【タイトル】✨\n【さん】【さん】` },
+  { id:'d30', cat:'event-parts', title:'Camp作業会', badge:'optional', timing:'コピペ用',
+    text:`🗓00:00~00:00\nCamp限定🔥Camp作業会\nリモライブにて開催\n(1月・2月・3月Campスタートメンバー限定)` },
+  { id:'d31', cat:'event-parts', title:'生成AIチャレンジ会', badge:'optional', timing:'コピペ用',
+    text:`🗓00:00~00:00\n【全員対象】\n生成AIチャレンジ会🤖\n講師：〇〇さん\n(Zoom企画)` },
+  { id:'d32', cat:'event-parts', title:'デザイン壁打ち会', badge:'optional', timing:'コピペ用',
+    text:`🗓00:00~00:00\nデザイン壁打ち会🎨\n講師：ほのかさん\n【参加対象：ベーシック以上】\n(Zoom企画)\n▶︎アーカイブは全員に公開されます🎥` },
+
+  { id:'d33', cat:'event-info', catLabel:'企画内お知らせ', title:'企画内お知らせテンプレート', badge:'required', timing:'朝昼夜活の開始前',
+    note:'Notionの「企画内お知らせ」カレンダーから担当日の情報を取得して送信',
+    checklist:['企画内お知らせカレンダーで担当日を確認した','リモシティのリンクが有効か確認した（テスト投稿でないか）','URLの冒頭に絵文字をつけていない','お知らせが多い場合は2〜3個に絞った'],
+    text:`📣お知らせです\n\nお知らせ①\n（お知らせ詳細を貼る）\n\n——————\n\nお知らせ②\n（お知らせ詳細を貼る）\n\n——————\n\nぜひチェックしてみてください😊`,
+    extraInfo:`📍お知らせの優先順位\n＜優先度 高＞\n・お知らせ期間が短いもの（メンバーアンケート、YouTube更新、AWARDチャレンジなど）\n・実践プログラムやProコースなど期限があるかつ募集してるもの\n・案件募集\n\n＜タイミングを見て送るもの＞\n・1万人プロジェクト通信 → 更新直後〜企画前\n・リモートクラウド＆壁打ち誘導 → お知らせが少ないとき\n・リモだより → 更新直後やお知らせが少ないとき` },
+
+  { id:'d34', cat:'pre-event', catLabel:'企画開始前', title:'リモライブ前', badge:'required', timing:'企画の5-30分前', note:'@channelのメンションは手動でつけてください',
+    checklist:['Proコース・実践プログラム・クルー限定の企画を除外した','講師名は講師の表記に変更した','時間・テーマ・講師が正しい'],
+    text:`@channel\n🔻リモライブのご案内\n{{DATE}} 00:00〜 00:00\nテーマ：\n講師：\n\n💡リモシティに参加リンクが載っています✨️` },
+  { id:'d35', cat:'pre-event', title:'企画前（汎用）', badge:'required', timing:'企画の5-30分前', note:'@channelのメンションは手動でつけてください',
+    text:`@channel\n🔻〇〇のご案内\n{{DATE}} 00:00〜00:00\nテーマ：\n講師：\n\n💡リモシティに参加リンクが載っています✨️` },
+
+  { id:'d36', cat:'archive', catLabel:'アーカイブ', title:'アーカイブ更新のお知らせ', badge:'optional', timing:'更新時',
+    text:`🎥 アーカイブのお知らせ\n（タイトル）✨\n\n🔗（URLを貼る）` },
+
+  { id:'d37', cat:'other', catLabel:'その他', title:'フロアのご案内', badge:'optional', timing:'任意',
+    text:`🏠フロアのご案内🏠\n\nこのリモ部屋には1階以外にも「2階」と「屋上」があります。\nCamp作業エリアやマインドセット部屋なども用意しているので、ぜひ探検してみてくださいね🚙\n\nフロア移動のやり方はマニュアルをご覧ください📗\nhttps://remolabo-02.notion.site/remo-room2?p=2c1668d54fd3802c9bbafe0e49a9857c&pm=s` },
+  { id:'d38', cat:'other', title:'ご意見募集', badge:'optional', timing:'任意',
+    text:`＼ ✨ご意見大募集中✨ ／\n\n「こんな部屋があったらいいな」\n「こんなアイテムがあったらいいな」\n「こうだったら嬉しい」など\n気づいたことがあればぜひ教えてください！\n\nみんなの声で新しいリモ部屋を作っていきます😌\n\nアンケートフォームはこちら👇\nhttps://docs.google.com/forms/d/e/1FAIpQLScPpuiTSpAaVrnn9zh_FbUvfqmuJFa04lU16zIM6P9c0FqtMA/viewform?usp=preview` },
+  { id:'d39', cat:'other', title:'プロフィール設定のおすすめ', badge:'optional', timing:'任意',
+    text:`プロフィール設定画面で、\nご自身のアイコンをプロフィールにアップロードするのをおすすめしています!!\n\nぜひやってみてください😊\n\n📗新リモ部屋マニュアル\nhttps://remolabo-02.notion.site/remo-room2?p=2c1668d54fd38032bc50d2ca5004599a&pm=s` },
+];
+
+// ===== Data Layer (localStorage) =====
+let templates = [];
+
+function loadTemplates() {
+  const saved = localStorage.getItem(LS_KEY);
+  if (!saved) { templates = structuredClone(DEFAULT_TEMPLATES); return; }
+  try {
+    const data = JSON.parse(saved);
+    // Start from defaults, apply edits/deletes, add custom
+    templates = structuredClone(DEFAULT_TEMPLATES)
+      .filter(t => !data.deleted?.includes(t.id))
+      .map(t => data.edited?.[t.id] ? { ...t, ...data.edited[t.id] } : t);
+    if (data.added) templates.push(...data.added);
+  } catch { templates = structuredClone(DEFAULT_TEMPLATES); }
+}
+
+function saveToStorage() {
+  const data = { deleted: [], edited: {}, added: [] };
+  const defaultIds = DEFAULT_TEMPLATES.map(t => t.id);
+  templates.forEach(t => {
+    if (!defaultIds.includes(t.id)) { data.added.push(t); return; }
+    const orig = DEFAULT_TEMPLATES.find(d => d.id === t.id);
+    if (orig && JSON.stringify(orig) !== JSON.stringify(t)) data.edited[t.id] = t;
+  });
+  DEFAULT_TEMPLATES.forEach(d => { if (!templates.find(t => t.id === d.id)) data.deleted.push(d.id); });
+  localStorage.setItem(LS_KEY, JSON.stringify(data));
+}
+
+function hasCustomizations() {
+  const saved = localStorage.getItem(LS_KEY);
+  if (!saved) return false;
+  const data = JSON.parse(saved);
+  return (data.deleted?.length || Object.keys(data.edited||{}).length || data.added?.length);
+}
+
+// ===== CRUD =====
+function deleteTemplate(id) {
+  if (!confirm('このテンプレートを削除しますか？')) return;
+  templates = templates.filter(t => t.id !== id);
+  saveToStorage();
+  renderCurrent();
+  showToast('削除しました');
+}
+
+function openEditModal(id) {
+  const tpl = templates.find(t => t.id === id);
+  if (!tpl) return;
+  $('#modalTitle').textContent = 'テンプレートを編集';
+  $('#fEditId').value = id;
+  $('#fTitle').value = tpl.title;
+  populateCatSelect(tpl.cat);
+  $('#fTiming').value = tpl.timing || '';
+  $('#fBadge').value = tpl.badge || 'optional';
+  $('#fRoom').value = tpl.roomType || '';
+  $('#fNote').value = tpl.note || '';
+  $('#fText').value = tpl.text || '';
+  $('#modal').classList.add('show');
+}
+
+function openAddModal() {
+  $('#modalTitle').textContent = 'テンプレートを追加';
+  $('#fEditId').value = '';
+  $('#fTitle').value = '';
+  populateCatSelect('');
+  $('#fTiming').value = '';
+  $('#fBadge').value = 'optional';
+  $('#fRoom').value = '';
+  $('#fNote').value = '';
+  $('#fText').value = '';
+  $('#modal').classList.add('show');
+}
+
+function closeModal() { $('#modal').classList.remove('show'); }
+
+function populateCatSelect(selectedCat) {
+  const sel = $('#fCat');
+  const cats = getCategories();
+  sel.innerHTML = '';
+  cats.forEach((label, key) => {
+    const opt = document.createElement('option');
+    opt.value = key; opt.textContent = label;
+    if (key === selectedCat) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  // Add "new category" option
+  const optNew = document.createElement('option');
+  optNew.value = '__new__'; optNew.textContent = '+ 新しいカテゴリ';
+  sel.appendChild(optNew);
+}
+
+function saveTemplate() {
+  const title = $('#fTitle').value.trim();
+  const text = $('#fText').value;
+  if (!title) { showToast('タイトルを入力してください', 'warn'); return; }
+  if (!text) { showToast('本文を入力してください', 'warn'); return; }
+
+  let cat = $('#fCat').value;
+  if (cat === '__new__') {
+    cat = prompt('新しいカテゴリ名を入力してください');
+    if (!cat) return;
+    // Convert to key
+    const catKey = 'custom-' + uid();
+    const editId = $('#fEditId').value;
+    const tplData = {
+      id: editId || uid(),
+      cat: catKey, catLabel: cat,
+      title, text,
+      badge: $('#fBadge').value,
+      timing: $('#fTiming').value || '',
+      note: $('#fNote').value || undefined,
+      roomType: $('#fRoom').value || undefined,
+      isCustom: true,
+    };
+    if (editId) {
+      const idx = templates.findIndex(t => t.id === editId);
+      if (idx >= 0) templates[idx] = { ...templates[idx], ...tplData };
+    } else {
+      templates.push(tplData);
+    }
+  } else {
+    const editId = $('#fEditId').value;
+    const tplData = {
+      cat, title, text,
+      badge: $('#fBadge').value,
+      timing: $('#fTiming').value || '',
+      note: $('#fNote').value || undefined,
+      roomType: $('#fRoom').value || undefined,
+    };
+    if (editId) {
+      const idx = templates.findIndex(t => t.id === editId);
+      if (idx >= 0) Object.assign(templates[idx], tplData);
+    } else {
+      templates.push({ id: uid(), ...tplData, isCustom: true });
+    }
+  }
+
+  saveToStorage();
+  closeModal();
+  renderCurrent();
+  showToast(($('#fEditId').value ? '更新' : '追加') + 'しました');
+}
+
+function resetAll() {
+  if (!confirm('追加・編集・削除した内容をすべてリセットして初期状態に戻しますか？')) return;
+  localStorage.removeItem(LS_KEY);
+  loadTemplates();
+  renderCurrent();
+  showToast('初期状態に戻しました');
+}
+
+function toggleEditMode() {
+  document.body.classList.toggle('edit-mode');
+  const isEdit = document.body.classList.contains('edit-mode');
+  $('#btnEdit').innerHTML = isEdit ? '&#10003; 編集モード終了' : '&#9998; 編集モード';
+  $('#btnEdit').classList.toggle('btn-primary', isEdit);
+  $('#btnReset').style.display = isEdit && hasCustomizations() ? '' : 'none';
+  renderCurrent();
+}
+
+// ===== Render =====
+let currentCat = 'all';
+
+function getCategories() {
+  const seen = new Map();
+  templates.forEach(t => { if (!seen.has(t.cat)) seen.set(t.cat, t.catLabel || t.cat); });
+  return seen;
+}
+
+function renderCatNav() {
+  const nav = $('#catNav');
+  const cats = getCategories();
+  const ts = getCurrentTimeSlot();
+  nav.innerHTML = '';
+  const mk = (label, key) => {
+    const btn = document.createElement('button');
+    const isTimeHighlight = ts.nextCat && key === ts.nextCat && currentCat !== key;
+    btn.className = 'cat-btn' + (currentCat === key ? ' active' : '') + (isTimeHighlight ? ' time-highlight' : '');
+    btn.textContent = label;
+    btn.onclick = () => { currentCat = key; renderCurrent(); };
+    nav.appendChild(btn);
+  };
+  mk('すべて', 'all');
+  cats.forEach((label, key) => mk(label, key));
+}
+
+function renderTemplate(tpl, isTimeActive) {
+  const roomType = document.body.classList.contains('room-advanced') ? 'advanced' : 'basic';
+  if (tpl.roomType && tpl.roomType !== roomType) return '';
+  const isEdit = document.body.classList.contains('edit-mode');
+  const activeClass = isTimeActive ? ' time-active' : '';
+  const badgeHtml = tpl.isCustom
+    ? '<span class="section-badge badge-custom">カスタム</span>'
+    : tpl.badge === 'required'
+      ? '<span class="section-badge badge-required">必須</span>'
+      : '<span class="section-badge badge-optional">任意</span>';
+
+  let bodyHtml = '';
+  if (tpl.note) bodyHtml += `<div class="tpl-note">${escHtml(tpl.note)}</div>`;
+  if (tpl.checklist) {
+    bodyHtml += '<div class="checklist"><h4>チェック項目</h4>';
+    tpl.checklist.forEach((item, i) => {
+      bodyHtml += `<label><input type="checkbox"> ${escHtml(item)}</label>`;
+    });
+    bodyHtml += '</div>';
+  }
+  if (tpl.extraInfo) {
+    bodyHtml += `<div class="tpl-note" style="border-left-color:#1565c0;background:#e3f2fd">${escHtml(tpl.extraInfo).replace(/\n/g,'<br>')}</div>`;
+  }
+  if (tpl.variants) {
+    tpl.variants.forEach((v, i) => {
+      bodyHtml += `<div style="margin-bottom:12px">
+        <div style="font-size:12px;font-weight:600;color:var(--primary);margin-bottom:4px">${escHtml(v.label)}</div>
+        <div class="tpl-text">${escHtml(replaceDatePlaceholder(v.text))}</div>
+        <div class="tpl-actions">
+          <button class="btn-copy" onclick="event.stopPropagation();copyVariant('${tpl.id}',${i},this)">&#128203; コピー</button>
+        </div></div>`;
+    });
+  } else {
+    bodyHtml += `<div class="tpl-text">${escHtml(replaceDatePlaceholder(tpl.text))}</div>
+      <div class="tpl-actions">
+        <button class="btn-copy" onclick="event.stopPropagation();copyText('${tpl.id}',this)">&#128203; コピー</button>
+      </div>`;
+  }
+
+  const editBtns = isEdit ? `
+    <div class="edit-btns" style="display:flex">
+      <button class="btn btn-sm" onclick="event.stopPropagation();openEditModal('${tpl.id}')">&#9998;</button>
+      <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteTemplate('${tpl.id}')">&#128465;</button>
+    </div>` : '';
+
+  return `<div class="tpl-card${activeClass}" onclick="this.classList.toggle('open')">
+    <div class="tpl-header">
+      <div class="tpl-title">${badgeHtml} ${escHtml(tpl.title)}</div>
+      ${editBtns}
+      <div class="tpl-timing">${escHtml(tpl.timing || '')}</div>
+      <div class="tpl-arrow">&#9660;</div>
+    </div>
+    <div class="tpl-body">${bodyHtml}</div>
+  </div>`;
+}
+
+function renderCurrent() {
+  renderCatNav();
+  const content = $('#content');
+  const timeSlot = getCurrentTimeSlot();
+  const cats = getCategories();
+  const roomType = document.body.classList.contains('room-advanced') ? 'advanced' : 'basic';
+  let html = '';
+  const SECTION_NOTION_LINKS = {
+    'event': [
+      { label:'本日の企画一覧', url:'https://www.notion.so/remolabo/ddcf421272344be4b4ca8f3db3cf3a5b?v=9389f2b3be8342d7b588f113e9cf5438', icon:'&#128197;' },
+      { label:'本日の企画チェック', url:'https://www.notion.so/remolabo/2d1bee38fcfe800ea915ee3f630f04c1?source=copy_link#2e0bee38fcfe80ce80f0c22d3119c14e', icon:'&#128203;' },
+    ],
+    'event-info': [
+      { label:'企画内お知らせ', url:'https://www.notion.so/remolabo/d8449a37cd014208a02f675326c2713b', icon:'&#128227;' },
+    ],
+  };
+  cats.forEach((label, cat) => {
+    if (currentCat !== 'all' && currentCat !== cat) return;
+    const items = templates.filter(t => t.cat === cat);
+    const visible = items.filter(t => !t.roomType || t.roomType === roomType);
+    if (!visible.length) return;
+    html += `<div class="section"><div class="section-title">${escHtml(label)}</div>`;
+    if (SECTION_NOTION_LINKS[cat]) {
+      html += '<div class="section-notion">';
+      SECTION_NOTION_LINKS[cat].forEach(l => {
+        html += `<a href="${l.url}" target="_blank" rel="noopener">${l.icon} ${escHtml(l.label)}</a>`;
+      });
+      html += '</div>';
+    }
+    visible.forEach(t => { html += renderTemplate(t, t.timeSlot === timeSlot.slot); });
+    html += '</div>';
+  });
+  content.innerHTML = html;
+  // Auto-open time-active
+  setTimeout(() => $$('.tpl-card.time-active').forEach(c => c.classList.add('open')), 50);
+  // Show reset button if customizations exist
+  if (document.body.classList.contains('edit-mode')) {
+    $('#btnReset').style.display = hasCustomizations() ? '' : 'none';
+  }
+}
+
+// ===== Init =====
+function init() {
+  $('#todayDate').textContent = todayStr();
+  loadTemplates();
+  updateTimeBar();
+
+  $$('.room-toggle button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $$('.room-toggle button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.body.className = (document.body.classList.contains('edit-mode') ? 'edit-mode ' : '') +
+        (btn.dataset.room === 'advanced' ? 'room-advanced' : 'room-basic');
+      renderCurrent();
+    });
+  });
+
+  // Close modal on overlay click
+  $('#modal').addEventListener('click', e => { if (e.target === $('#modal')) closeModal(); });
+
+  renderCurrent();
+  setInterval(() => { updateTimeBar(); renderCatNav(); }, 60000);
+}
+init();
+</script>
+</body>
+</html>
